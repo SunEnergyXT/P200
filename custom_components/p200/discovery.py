@@ -101,6 +101,10 @@ class MdnsManager:
             sw_version = properties["fw_ver"]
             hw_version = properties["model"]
 
+            message = f"mdns discovery info serial_number:{serial_number} ip:{host} port:{port}"
+
+            _LOGGER.info(message)
+
             return MdnsDeiveInfo(
                 service_type,
                 service_name,
@@ -127,12 +131,17 @@ class MdnsManager:
 
             serial_number = add_info.serial_number
 
+            host = add_info.host
+
             if not serial_number:
                 return
 
             GLOBAL_DEVICES[serial_number] = add_info
 
-            message = f"add mdns discovery sn:{serial_number}"
+            # 发送更新函数
+            await self.async_update_devices(add_info)
+
+            message = f"add mdns discovery sn:{serial_number} host:{host}"
 
             _LOGGER.info(message)
 
@@ -164,13 +173,9 @@ class MdnsManager:
 
             serial_number = update_info.serial_number
 
+            host = update_info.host
+
             if not serial_number:
-                return
-
-            # 判断存储的数据和更新上来的数据是否真的不一样
-            device_info = GLOBAL_DEVICES[serial_number]
-
-            if not await self.async_handle_judge_change(update_info, device_info):
                 return
 
             GLOBAL_DEVICES[serial_number] = update_info
@@ -178,7 +183,7 @@ class MdnsManager:
             # 发送更新函数
             await self.async_update_devices(update_info)
 
-            message = f"update mdns discovery sn:{serial_number}"
+            message = f"update mdns discovery sn:{serial_number} host:{host}"
 
             _LOGGER.info(message)
 
@@ -200,16 +205,9 @@ class MdnsManager:
             message = "error handling service update: %s", e
             _LOGGER.error(message)
 
-    async def async_handle_judge_change(self, update_info, device_info) -> bool:
+    async def async_handle_judge_change(self, entry_info, device_info) -> bool:
         """mdns判断配置是否更新函数."""
-        # 判断存储的设备信息与更新上来的设备信息是否不一致,存储在不一样的则返回true
-        result = MdnsDeiveInfo.__eq__(update_info, device_info)
-
-        if result:
-            return False
-
-        return True
-        # return any(update_info.get(key) != device_info.get(key) for key in update_info)
+        return any(entry_info.get(key) != device_info.get(key) for key in entry_info)
 
     async def async_update_devices(self, device_info: MdnsDeiveInfo):
         """mdns配置更新函数."""
@@ -228,6 +226,12 @@ class MdnsManager:
             return
 
         device_data = get_device_info_form_device(device_info)
+
+        entry_data = current_entry.data
+
+        # 配置信息没有更改,则返回
+        if not await self.async_handle_judge_change(entry_data, device_data):
+            return
 
         updated_data = {**current_entry.data, **device_data}
 
