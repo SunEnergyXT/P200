@@ -92,7 +92,7 @@ class TcpClient:
             except (asyncio.CancelledError, TimeoutError):
                 pass  # 需要捕获取消错误,无法转化为异常
             except Exception as e:
-                message = "async_disconnect_error: %s", e
+                message = "async_disconnect_isten_data_task_error: %s", e
                 _LOGGER.error(message)
             finally:
                 self.listen_data_task = None
@@ -104,7 +104,7 @@ class TcpClient:
 
                 await asyncio.wait_for(self.writer.wait_closed(), timeout=self.delay)
             except (TimeoutError, Exception) as e:
-                message = "async_disconnect_error: %s", e
+                message = "async_disconnect_writer_error: %s", e
                 _LOGGER.error(message)
             finally:
                 self.writer = None
@@ -192,6 +192,8 @@ class TcpClient:
                     data = await self.reader.read(1024)
 
                 if not data:
+                    message = f"{self.serial_number} disconnect"
+                    _LOGGER.error(message)
                     break  # 连接已关闭
 
                 message = f"{self.serial_number} receive_data:{data}"
@@ -204,7 +206,15 @@ class TcpClient:
                 if decoded_data == "":
                     continue
 
+                if "xaa" in decoded_data.lower():
+                    continue
+
                 if "code" not in decoded_data.lower():
+                    continue
+
+                count_code = decoded_data.lower().count("code")
+
+                if count_code != 1:
                     continue
 
                 respond_info = RespondInfo.json_to_respond(decoded_data)

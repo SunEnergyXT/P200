@@ -11,5 +11,5 @@
   "dependencies": ["network", "dhcp","zeroconf"],
   "requirements": ["propcache", "aiofiles", "pyyaml"],
   "translations": ["translations"],
-  "version": "25.12.26"
+  "version": "26.01.07"
 }
