@@ -24,7 +24,7 @@ class EquipInfo:
                 # 唯一标识,序列号,mac地址不能一样，否则无法区分设备
                 "identifiers": {(DOMAIN, self.entry.entry_id)},
                 "name": f"{serial_umber}",
-                "manufacturer": "HighPower",  # 制造商
+                "manufacturer": "SunEnergyXT",  # 制造商
                 "sw_version": f"{sw_version}",  # 软件版本
                 "hw_version": f"{hw_version}",  # 硬件版本
                 "serial_number": f"{serial_umber}",  # 序列号
